@@ -1,33 +1,31 @@
-let listaParole = [];
+// Mettiamo le parole direttamente qui dentro per evitare blocchi del browser!
+const listaParole = [
+  "orcozzio", "sdrumata", "pazzurdo", "marza", "giammo", "blur", "scam", "clown", "goliardico", "chad", 
+  "boomer", "zoomer", "bannato", "streamer", "subbato", "hype", "clip", "triggerato", "cringe", "flammare", 
+  "gabbato", "blastato", "droppato", "ziarone", "paccato", "skippato", "snitch", "flexare", "shippare", "toxic", 
+  "nerfare", "buffare", "clutch", "tryhard", "tiltato", "onesto", "sdrogo", "maranza", "collasso", "cialtrone", 
+  "ruspante", "panettone", "computer", "javascript", "grattacielo", "barbagianni", "telefono", "github", "ornitorinco", "streaming", 
+  "monitor", "astronave", "biscotto", "cappuccino", "divano", "elefante", "formaggio", "giraffa", "insalata", "lampione", 
+  "matita", "nuvola", "ombrello", "pinguino", "quaderno", "righello", "scoiattolo", "tastiera", "universo", "valigia", 
+  "zaino", "aeroporto", "bicicletta", "chitarra", "dinosauro", "elicottero", "fontana", "gelato", "idraulico", "lucertola", 
+  "margherita", "negozio", "orologio", "pomodoro", "quadrifoglio", "rubinetto", "semaforo", "televisore", "unghia", "vulcano", 
+  "zucchero", "altalena", "balena", "cioccolato", "delfino", "esploratore", "farfalla", "gondola", "ippopotamo", "lanterna",
+  "pino", "gatto", "esplosione", "lumaca", "povero", "sbirro", "grandissimo", "hotel"
+];
+
 let parolaSegreta = ""; 
 let lettereRivelate = [];
 let timerSuggerimento = null;
 
-// 1. Carica le parole dal tuo file words.json
-async function caricaParole() {
-    try {
-        const risp = await fetch('words.json');
-        if (!risp.ok) throw new Error("File JSON non trovato");
-        listaParole = await risp.json();
-        avviaNuovaPartita();
-    } catch (errore) {
-        console.error("Errore nel caricamento del JSON, uso parole di riserva:", errore);
-        // Parole di riserva se il fetch fallisce in locale
-        listaParole = ["orcozzio", "streamer", "cringe", "maranza", "javascript", "grattacielo"];
-        avviaNuovaPartita();
-    }
-}
-
-// 2. Mostra i trattini o le lettere rivelate nell'HTML
+// Mostra i trattini o le lettere nell'HTML
 function aggiornaGraficaSito() {
     const elementoHTML = document.getElementById("word-display");
     if (elementoHTML) {
-        // Unisce i trattini con uno spazio per renderli leggibili (es. _ _ _ _)
         elementoHTML.innerText = lettereRivelate.join(" ");
     }
 }
 
-// 3. Rileva una lettera a caso ogni 20 secondi
+// Rivela una lettera a caso ogni 20 secondi
 function rivelaLetteraCasuale() {
     let indiciNascosti = [];
 
@@ -40,23 +38,21 @@ function rivelaLetteraCasuale() {
 
     // Lascia sempre l'ultima lettera coperta per il gioco
     if (indiciNascosti.length > 1) {
-        let indiceCasuale = indiciNascosti[Math.floor(Math.random() * indiciNascosti.length)];
+        let indiceCasuale = Math.floor(Math.random() * indiciNascosti.length);
+        let posizioneVera = indiciNascosti[indiceCasuale];
         
-        // Rivela la lettera reale trasformandola in MAIUSCOLO
-        lettereRivelate[indiceCasuale] = parolaSegreta[indiceCasuale].toUpperCase();
+        // Rivela la lettera reale
+        lettereRivelate[posizioneVera] = parolaSegreta[posizioneVera].toUpperCase();
         
         aggiornaGraficaSito();
-        console.log("Suggerimento: rivelata una lettera!");
+        console.log("Suggerimento automatico inserito!");
     } else {
         clearInterval(timerSuggerimento);
-        console.log("Timer fermato: rimane solo una lettera nascosta!");
     }
 }
 
-// 4. Avvia una nuova partita azzerando il timer
+// Avvia una nuova partita azzerando il timer
 function avviaNuovaPartita() {
-    if (listaParole.length === 0) return;
-
     // Scegli una parola a caso
     const indiceCasuale = Math.floor(Math.random() * listaParole.length);
     parolaSegreta = listaParole[indiceCasuale].toUpperCase();
@@ -67,12 +63,10 @@ function avviaNuovaPartita() {
     // Aggiorna lo schermo subito
     aggiornaGraficaSito();
 
-    // Reset del timer precedente e avvio del nuovo loop (20 secondi = 20000ms)
+    // Reset del timer precedente e avvio del nuovo loop (20000ms = 20 secondi)
     if (timerSuggerimento) clearInterval(timerSuggerimento);
     timerSuggerimento = setInterval(rivelaLetteraCasuale, 20000);
-    
-    console.log("Nuova parola avviata: " + parolaSegreta);
 }
 
-// Fai partire il tutto al caricamento della pagina
-window.onload = caricaParole;
+// Fai partire il tutto appena la pagina si apre
+window.onload = avviaNuovaPartita;
