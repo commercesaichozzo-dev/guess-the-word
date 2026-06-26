@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guess The Word - Twitch Overlay</title>
+    <!-- Carichiamo la libreria ufficiale di Twitch -->
     <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/tmi.min.js"></script>
     <style>
         body {
@@ -25,7 +26,8 @@
             border: 4px solid #772ce8; /* Viola Twitch */
             border-radius: 20px;
             padding: 40px;
-            width: 500px;
+            min-width: 500px;
+            max-width: fit-content;
             text-align: center;
             box-shadow: 0px 0px 20px rgba(119, 44, 232, 0.3);
         }
@@ -40,14 +42,15 @@
         }
 
         #word-display {
-            font-size: 48px;
+            font-size: 44px;
             font-weight: bold;
-            letter-spacing: 15px;
+            letter-spacing: 10px;
             color: white;
             min-height: 60px;
+            white-space: nowrap;
         }
 
-        /* Nuova grafica per la Classifica / Leaderboard */
+        /* Grafica per la Classifica / Leaderboard */
         .leaderboard-box {
             background-color: #121214;
             border: 3px solid #a970ff;
@@ -58,7 +61,7 @@
         }
 
         .leaderboard-title {
-            color: #00ff7f; /* Verde per spiccare */
+            color: #00ff7f;
             font-size: 20px;
             font-weight: bold;
             text-transform: uppercase;
@@ -85,18 +88,20 @@
             border-bottom: none;
         }
 
-        .podium-1 { color: #ffd700; font-weight: bold; } /* Oro */
-        .podium-2 { color: #c0c0c0; font-weight: bold; } /* Argento */
-        .podium-3 { color: #cd7f32; font-weight: bold; } /* Bronzo */
+        .podium-1 { color: #ffd700; font-weight: bold; }
+        .podium-2 { color: #c0c0c0; font-weight: bold; }
+        .podium-3 { color: #cd7f32; font-weight: bold; }
     </style>
 </head>
 <body>
 
+    <!-- Box del Gioco Principale -->
     <div class="game-box">
         <div class="title">GUESS THE WORD!</div>
         <div id="word-display"></div>
     </div>
 
+    <!-- Box della Classifica Top 3 -->
     <div class="leaderboard-box">
         <div class="leaderboard-title">🏆 TOP 3 CHAT</div>
         <ul id="leaderboard-list" class="leaderboard-list">
@@ -107,13 +112,9 @@
     </div>
 
     <script>
-        // Il tuo canale Twitch
         const canaleTwitch = "saichozzo";
-
-        // Oggetto per salvare i punteggi della chat (es: { "utente1": 3, "utente2": 1 })
         let punteggiUtenti = {};
 
-        // Lista totale delle parole
         const listaParole = [
           "orcozzio", "sdrumata", "pazzurdo", "marza", "giammo", "blur", "scam", "clown", "goliardico", "chad", 
           "boomer", "zoomer", "bannato", "streamer", "subbato", "hype", "clip", "triggerato", "cringe", "flammare", 
@@ -140,31 +141,26 @@
             }
         }
 
-        // Funzione per aggiornare visivamente la Top 3 a schermo
         function aggiornaClassifica() {
             const listaHTML = document.getElementById("leaderboard-list");
             if (!listaHTML) return;
 
-            // Trasforma l'oggetto dei punteggi in un array ordinato dal più alto al più basso
             let classificaOrdinata = Object.entries(punteggiUtenti)
-                .sort((a, b) => b[1] - a[1]) // Ordina per punti decrescenti
-                .slice(0, 3); // Prendi solo i primi 3
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
 
             let nuovoContenuto = "";
             const classiPodio = ["podium-1", "podium-2", "podium-3"];
 
-            // Genera le 3 righe della classifica
             for (let i = 0; i < 3; i++) {
                 if (classificaOrdinata[i]) {
                     let nome = classificaOrdinata[i][0];
                     let punti = classificaOrdinata[i][1];
                     nuovoContenuto += `<li class="leaderboard-item"><span class="${classiPodio[i]}">${i+1}. ${nome}</span> <span>${punti} pt</span></li>`;
                 } else {
-                    // Riga vuota di riempimento se non ci sono ancora abbastanza giocatori
                     nuovoContenuto += `<li class="leaderboard-item"><span class="${classiPodio[i]}">${i+1}. ---</span> <span>0 pt</span></li>`;
                 }
             }
-
             listaHTML.innerHTML = nuovoContenuto;
         }
 
@@ -198,10 +194,12 @@
             aggiornaGrafica();
 
             if (timerSuggerimento) clearInterval(timerSuggerimento);
-            timerSuggerimento = setInterval(rivelaLettera, 20000); // 20 secondi esatti
+            
+            // IMPOSTATO A 45 SECONDI: 45000 millisecondi prima di mostrare un aiuto
+            timerSuggerimento = setInterval(rivelaLettera, 45000); 
         }
 
-        // --- COLLEGAMENTO IN TEMPO REALE A TWITCH ---
+        // --- COLLEGAMENTO TWITCH ---
         const client = new tmi.Client({
             channels: [canaleTwitch]
         });
@@ -217,31 +215,26 @@
                 giocoAttivo = false;
                 clearInterval(timerSuggerimento);
 
-                // Recupera il nome corretto visualizzato dell'utente su Twitch
                 const nomeVincitore = tags['display-name'];
 
-                // Assegna +1 punto all'utente (se è la prima volta, imposta a 1)
                 if (punteggiUtenti[nomeVincitore]) {
                     punteggiUtenti[nomeVincitore] += 1;
                 } else {
                     punteggiUtenti[nomeVincitore] = 1;
                 }
 
-                // Aggiorna immediatamente la Top 3 visibile a schermo
                 aggiornaClassifica();
 
-                // Mostra l'animazione di vittoria nell'overlay
                 const elemento = document.getElementById("word-display");
                 elemento.innerHTML = `<span style="color: #00ff7f; font-size: 26px; letter-spacing: 0px;">INDOVINATA DA<br><span style="color: #fff;">${nomeVincitore}</span></span>`;
 
-                // Aspetta 5 secondi e poi cambia parola
                 setTimeout(avviaGioco, 5000);
             }
         });
 
         window.onload = function() {
             avviaGioco();
-            aggiornaClassifica(); // Mostra la griglia vuota iniziale
+            aggiornaClassifica();
         };
     </script>
 </body>
