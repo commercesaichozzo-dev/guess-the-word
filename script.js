@@ -3,87 +3,76 @@ let parolaSegreta = "";
 let lettereRivelate = [];
 let timerSuggerimento = null;
 
-// 1. Funzione per caricare le parole dal file words.json
+// 1. Carica le parole dal tuo file words.json
 async function caricaParole() {
     try {
         const risp = await fetch('words.json');
+        if (!risp.ok) throw new Error("File JSON non trovato");
         listaParole = await risp.json();
-        // Una volta caricate le parole, avvia la prima partita
         avviaNuovaPartita();
     } catch (errore) {
-        console.error("Errore nel caricamento delle parole:", errore);
-        // Fallback di sicurezza se il JSON non si carica
-        listaParole = ["javascript", "streamer", "cringe", "maranza"];
+        console.error("Errore nel caricamento del JSON, uso parole di riserva:", errore);
+        // Parole di riserva se il fetch fallisce in locale
+        listaParole = ["orcozzio", "streamer", "cringe", "maranza", "javascript", "grattacielo"];
         avviaNuovaPartita();
     }
 }
 
-// 2. Funzione per mostrare i trattini a schermo (es. _ _ _ _ _)
+// 2. Mostra i trattini o le lettere rivelate nell'HTML
 function aggiornaGraficaSito() {
-    // Sostituisci 'contenitore-parola' con l'ID reale del tuo DIV nell'index.html
-    const elementoHTML = document.getElementById("contenitore-parola");
+    const elementoHTML = document.getElementById("word-display");
     if (elementoHTML) {
+        // Unisce i trattini con uno spazio per renderli leggibili (es. _ _ _ _)
         elementoHTML.innerText = lettereRivelate.join(" ");
     }
 }
 
-// 3. Funzione che rivela una lettera casuale ogni 20 secondi
+// 3. Rileva una lettera a caso ogni 20 secondi
 function rivelaLetteraCasuale() {
     let indiciNascosti = [];
 
-    // Trova la posizione di tutti i trattini ancora non indovinati
+    // Trova le posizioni dei trattini rimasti
     for (let i = 0; i < lettereRivelate.length; i++) {
         if (lettereRivelate[i] === "_") {
             indiciNascosti.push(i);
         }
     }
 
-    // Rivela una lettera solo se ne rimangono almeno 2 nascoste 
-    // (lasciamo l'ultima coperta così la chat deve comunque indovinarla!)
+    // Lascia sempre l'ultima lettera coperta per il gioco
     if (indiciNascosti.length > 1) {
         let indiceCasuale = indiciNascosti[Math.floor(Math.random() * indiciNascosti.length)];
         
-        // Sostituiamo il trattino con la lettera reale (convertita in maiuscolo per estetica)
+        // Rivela la lettera reale trasformandola in MAIUSCOLO
         lettereRivelate[indiceCasuale] = parolaSegreta[indiceCasuale].toUpperCase();
         
         aggiornaGraficaSito();
-        console.log("Suggerimento automatico: rivelata una lettera!");
+        console.log("Suggerimento: rivelata una lettera!");
     } else {
-        // Se la parola è praticamente scoperta, ferma il timer
         clearInterval(timerSuggerimento);
+        console.log("Timer fermato: rimane solo una lettera nascosta!");
     }
 }
 
-// 4. Funzione per avviare una nuova partita
+// 4. Avvia una nuova partita azzerando il timer
 function avviaNuovaPartita() {
     if (listaParole.length === 0) return;
 
-    // Sceglie una parola a caso dal mix di 100 parole
+    // Scegli una parola a caso
     const indiceCasuale = Math.floor(Math.random() * listaParole.length);
     parolaSegreta = listaParole[indiceCasuale].toUpperCase();
 
-    // Crea i trattini vuoti in base alla lunghezza della parola
+    // Riempi l'array di trattini
     lettereRivelate = Array(parolaSegreta.length).fill("_");
 
-    // Mostra i trattini vuoti a schermo su OBS
+    // Aggiorna lo schermo subito
     aggiornaGraficaSito();
 
-    // Riavvia il timer da 20 secondi (20000 millisecondi)
+    // Reset del timer precedente e avvio del nuovo loop (20 secondi = 20000ms)
     if (timerSuggerimento) clearInterval(timerSuggerimento);
     timerSuggerimento = setInterval(rivelaLetteraCasuale, 20000);
     
-    console.log("Nuova partita avviata! Parola da indovinare: " + parolaSegreta);
+    console.log("Nuova parola avviata: " + parolaSegreta);
 }
 
-// 5. Funzione da chiamare quando la chat indovina (collegata al tuo sistema Twitch)
-function parolaIndovinataDallaChat() {
-    clearInterval(timerSuggerimento);
-    console.log("La chat ha indovinato!");
-    // Qui puoi mettere la tua logica di vittoria (es. +1 punto, messaggi a schermo, ecc.)
-    
-    // Dopo 5 secondi di celebrazione, avvia automaticamente una nuova parola
-    setTimeout(avviaNuovaPartita, 5000);
-}
-
-// Avvia il caricamento del gioco non appena la pagina si apre
+// Fai partire il tutto al caricamento della pagina
 window.onload = caricaParole;
