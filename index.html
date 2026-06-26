@@ -23,7 +23,7 @@
         /* BOX PRINCIPALE CON BORDO BIANCO */
         .game-box {
             background-color: #121214;
-            border: 4px solid #ffffff !important; /* Forza il bianco */
+            border: 4px solid #ffffff !important;
             border-radius: 20px;
             padding: 40px;
             min-width: 500px;
@@ -206,7 +206,7 @@
         client.connect();
 
         client.on('message', (channel, tags, message, self) => {
-            if (!giocoActive) return;
+            if (!giocoAttivo) return; // FIXATO: Era giocoActive, ora è corretto!
             const tentativoUtente = message.trim().toUpperCase();
 
             if (tentativoUtente === parolaSegreta) {
