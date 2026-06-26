@@ -4,22 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guess The Word - Twitch Overlay</title>
+    <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/tmi.min.js"></script>
     <style>
         body {
             background-color: black;
             color: white;
             font-family: 'Arial', sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: flex-start;
             align-items: flex-start;
             height: 100vh;
             margin: 0;
             padding: 40px;
+            gap: 20px;
         }
 
         .game-box {
             background-color: #121214;
-            border: 4px solid #772ce8;
+            border: 4px solid #772ce8; /* Viola Twitch */
             border-radius: 20px;
             padding: 40px;
             width: 500px;
@@ -43,6 +46,48 @@
             color: white;
             min-height: 60px;
         }
+
+        /* Nuova grafica per la Classifica / Leaderboard */
+        .leaderboard-box {
+            background-color: #121214;
+            border: 3px solid #a970ff;
+            border-radius: 15px;
+            padding: 20px;
+            width: 500px;
+            box-shadow: 0px 0px 15px rgba(169, 112, 255, 0.2);
+        }
+
+        .leaderboard-title {
+            color: #00ff7f; /* Verde per spiccare */
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid #26262b;
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .podium-1 { color: #ffd700; font-weight: bold; } /* Oro */
+        .podium-2 { color: #c0c0c0; font-weight: bold; } /* Argento */
+        .podium-3 { color: #cd7f32; font-weight: bold; } /* Bronzo */
     </style>
 </head>
 <body>
@@ -52,7 +97,23 @@
         <div id="word-display"></div>
     </div>
 
+    <div class="leaderboard-box">
+        <div class="leaderboard-title">🏆 TOP 3 CHAT</div>
+        <ul id="leaderboard-list" class="leaderboard-list">
+            <li class="leaderboard-item"><span class="podium-1">1. ---</span> <span>0 pt</span></li>
+            <li class="leaderboard-item"><span class="podium-2">2. ---</span> <span>0 pt</span></li>
+            <li class="leaderboard-item"><span class="podium-3">3. ---</span> <span>0 pt</span></li>
+        </ul>
+    </div>
+
     <script>
+        // Il tuo canale Twitch
+        const canaleTwitch = "saichozzo";
+
+        // Oggetto per salvare i punteggi della chat (es: { "utente1": 3, "utente2": 1 })
+        let punteggiUtenti = {};
+
+        // Lista totale delle parole
         const listaParole = [
           "orcozzio", "sdrumata", "pazzurdo", "marza", "giammo", "blur", "scam", "clown", "goliardico", "chad", 
           "boomer", "zoomer", "bannato", "streamer", "subbato", "hype", "clip", "triggerato", "cringe", "flammare", 
@@ -70,6 +131,7 @@
         let parolaSegreta = ""; 
         let lettereRivelate = [];
         let timerSuggerimento = null;
+        let giocoAttivo = true;
 
         function aggiornaGrafica() {
             const elemento = document.getElementById("word-display");
@@ -78,7 +140,37 @@
             }
         }
 
+        // Funzione per aggiornare visivamente la Top 3 a schermo
+        function aggiornaClassifica() {
+            const listaHTML = document.getElementById("leaderboard-list");
+            if (!listaHTML) return;
+
+            // Trasforma l'oggetto dei punteggi in un array ordinato dal più alto al più basso
+            let classificaOrdinata = Object.entries(punteggiUtenti)
+                .sort((a, b) => b[1] - a[1]) // Ordina per punti decrescenti
+                .slice(0, 3); // Prendi solo i primi 3
+
+            let nuovoContenuto = "";
+            const classiPodio = ["podium-1", "podium-2", "podium-3"];
+
+            // Genera le 3 righe della classifica
+            for (let i = 0; i < 3; i++) {
+                if (classificaOrdinata[i]) {
+                    let nome = classificaOrdinata[i][0];
+                    let punti = classificaOrdinata[i][1];
+                    nuovoContenuto += `<li class="leaderboard-item"><span class="${classiPodio[i]}">${i+1}. ${nome}</span> <span>${punti} pt</span></li>`;
+                } else {
+                    // Riga vuota di riempimento se non ci sono ancora abbastanza giocatori
+                    nuovoContenuto += `<li class="leaderboard-item"><span class="${classiPodio[i]}">${i+1}. ---</span> <span>0 pt</span></li>`;
+                }
+            }
+
+            listaHTML.innerHTML = nuovoContenuto;
+        }
+
         function rivelaLettera() {
+            if (!giocoAttivo) return;
+            
             let indiciNascosti = [];
             for (let i = 0; i < lettereRivelate.length; i++) {
                 if (lettereRivelate[i] === "_") {
@@ -98,6 +190,7 @@
         }
 
         function avviaGioco() {
+            giocoAttivo = true;
             const indiceCasuale = Math.floor(Math.random() * listaParole.length);
             parolaSegreta = listaParole[indiceCasuale].toUpperCase();
             
@@ -105,10 +198,51 @@
             aggiornaGrafica();
 
             if (timerSuggerimento) clearInterval(timerSuggerimento);
-            timerSuggerimento = setInterval(rivelaLettera, 2000); // 2 Secondi per il test!
+            timerSuggerimento = setInterval(rivelaLettera, 20000); // 20 secondi esatti
         }
 
-        window.onload = avviaGioco;
+        // --- COLLEGAMENTO IN TEMPO REALE A TWITCH ---
+        const client = new tmi.Client({
+            channels: [canaleTwitch]
+        });
+
+        client.connect();
+
+        client.on('message', (channel, tags, message, self) => {
+            if (!giocoAttivo) return;
+
+            const tentativoUtente = message.trim().toUpperCase();
+
+            if (tentativoUtente === parolaSegreta) {
+                giocoAttivo = false;
+                clearInterval(timerSuggerimento);
+
+                // Recupera il nome corretto visualizzato dell'utente su Twitch
+                const nomeVincitore = tags['display-name'];
+
+                // Assegna +1 punto all'utente (se è la prima volta, imposta a 1)
+                if (punteggiUtenti[nomeVincitore]) {
+                    punteggiUtenti[nomeVincitore] += 1;
+                } else {
+                    punteggiUtenti[nomeVincitore] = 1;
+                }
+
+                // Aggiorna immediatamente la Top 3 visibile a schermo
+                aggiornaClassifica();
+
+                // Mostra l'animazione di vittoria nell'overlay
+                const elemento = document.getElementById("word-display");
+                elemento.innerHTML = `<span style="color: #00ff7f; font-size: 26px; letter-spacing: 0px;">INDOVINATA DA<br><span style="color: #fff;">${nomeVincitore}</span></span>`;
+
+                // Aspetta 5 secondi e poi cambia parola
+                setTimeout(avviaGioco, 5000);
+            }
+        });
+
+        window.onload = function() {
+            avviaGioco();
+            aggiornaClassifica(); // Mostra la griglia vuota iniziale
+        };
     </script>
 </body>
 </html>
