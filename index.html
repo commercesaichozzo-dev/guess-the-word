@@ -9,89 +9,20 @@
 </head>
 <body>
 
-    <div class="game-container">
-        <h1 class="title">GUESS THE WORD!</h1>
-        <div id="word-display" class="word-box"></div>
+    <div class="game-box">
+        <div class="title">GUESS THE WORD!</div>
+        <div id="word-display"></div>
     </div>
 
-    <script>
-        // Sostituisci con il tuo canale se non è questo
-        const canaleTwitch = "saichozzo"; 
-        let giocoAttivo = true;
-        let parolaSegreta = ""; 
-        let lettereRivelate = [];
-        let timerSuggerimento = null;
+    <div class="leaderboard-box">
+        <div class="leaderboard-title">🏆 TOP 3 CHAT</div>
+        <ul id="leaderboard-list" class="leaderboard-list">
+            <li class="leaderboard-item"><span class="podium-1">1. ---</span> <span>0 pt</span></li>
+            <li class="leaderboard-item"><span class="podium-2">2. ---</span> <span>0 pt</span></li>
+            <li class="leaderboard-item"><span class="podium-3">3. ---</span> <span>0 pt</span></li>
+        </ul>
+    </div>
 
-        const listaParole = [
-          "ORCOZZIO", "SDRUMATA", "PAZZURDO", "MARZA", "GIAMMO", "BLUR", "SCAM", "CLOWN", "GOLIARDICO", "CHAD", 
-          "BOOMER", "ZOOMER", "BANNATO", "STREAMER", "SUBBATO", "HYPE", "CLIP", "TRIGGERATO", "CRINGE", "FLAMMARE", 
-          "GABBATO", "BLASTATO", "DROPPATO", "ZIARONE", "PACCATO", "SKIPPA TO", "SNITCH", "FLEXARE", "SHIPPARE", "TOXIC", 
-          "NERFARE", "BUFFARE", "CLUTCH", "TRYHARD", "TILTATO", "ONESTO", "SDROGO", "MARANZA", "COLLASSO", "CIALTRONE", 
-          "RUSPANTE", "PANETTONE", "COMPUTER", "JAVASCRIPT", "GRATTACIELO", "BARBAGIANNI", "TELEFONO", "GITHUB", "ORNITORINCO", "STREAMING", 
-          "MONITOR", "ASTRONAVE", "BISCOTTO", "CAPPUCCINO", "DIVANO", "ELEFANTE", "FORMAGGIO", "GIRAFFA", "INSALATA", "LAMPIONE", 
-          "MATITA", "NUVOLA", "OMBRELLO", "PINGUINO", "QUADERNO", "RIGHELLO", "SCOIATTOLO", "TASTIERA", "UNIVERSO", "VALIGIA", 
-          "ZAINO", "AEROPORTO", "BICICLETTA", "CHITARRA", "DINOSAURO", "ELICOTTERO", "FONTANA", "GELATO", "IDRAULICO", "LUCERTOLA", 
-          "MARGHERITA", "NEGOZIO", "OROLOGIO", "POMODORO", "QUADRIFOGLIO", "RUBINETTO", "SEMAFORO", "TELEVISORE", "UNGHIA", "VULCANO", 
-          "ZUCCHERO", "ALTALENA", "BALENA", "CIOCCOLATO", "DELFINO", "ESPLORATORE", "FARFALLA", "GONDOLA", "IPPOTAMO", "LANTERNA",
-          "PINO", "GATTO", "ESPLOSIONE", "LUMACA", "POVERO", "SBIRRO", "GRANDISSIMO", "HOTEL"
-        ];
-
-        function aggiornaGrafica() {
-            const elemento = document.getElementById("word-display");
-            if (elemento) {
-                elemento.innerText = lettereRivelate.join(" ");
-            }
-        }
-
-        function rivelaLettera() {
-            if (!giocoAttivo) return;
-            let indiciNascosti = [];
-            for (let i = 0; i < lettereRivelate.length; i++) {
-                if (lettereRivelate[i] === "_") indiciNascosti.push(i);
-            }
-            if (indiciNascosti.length > 1) {
-                let indiceCasuale = Math.floor(Math.random() * indiciNascosti.length);
-                let posizioneVera = indiciNascosti[indiceCasuale];
-                lettereRivelate[posizioneVera] = parolaSegreta[posizioneVera];
-                aggiornaGrafica();
-            } else {
-                clearInterval(timerSuggerimento);
-            }
-        }
-
-        function avviaGioco() {
-            giocoAttivo = true;
-            const indiceCasuale = Math.floor(Math.random() * listaParole.length);
-            parolaSegreta = listaParole[indiceCasuale].toUpperCase();
-            lettereRivelate = Array(parolaSegreta.length).fill("_");
-            aggiornaGrafica();
-
-            if (timerSuggerimento) clearInterval(timerSuggerimento);
-            timerSuggerimento = setInterval(rivelaLettera, 30000); // Aiuto ogni 30 secondi
-        }
-
-        // Connessione alla chat di Twitch
-        const client = new tmi.Client({ channels: [canaleTwitch] });
-        client.connect();
-
-        client.on('message', (channel, tags, message, self) => {
-            if (!giocoAttivo) return;
-            const tentativoUtente = message.trim().toUpperCase();
-
-            if (tentativoUtente === parolaSegreta) {
-                giocoAttivo = false;
-                clearInterval(timerSuggerimento);
-
-                const nomeVincitore = tags['display-name'] || tags['username'];
-                const elemento = document.getElementById("word-display");
-                elemento.innerHTML = `<span style="font-size: 24px; color: #00ff7f;">INDOVINATA DA ${nomeVincitore.toUpperCase()}!</span>`;
-
-                // Prossima parola dopo 5 secondi
-                setTimeout(avviaGioco, 5000);
-            }
-        });
-
-        window.onload = avviaGioco;
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
